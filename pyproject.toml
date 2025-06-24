@@ -1,0 +1,14 @@
+[project]
+name = "final-assignment-template"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gradio>=5.34.2",
+    "llama-index-core>=0.12.43",
+    "llama-index-embeddings-huggingface>=0.5.4",
+    "llama-index-llms-huggingface-api>=0.5.0",
+    "python-dotenv>=1.1.1",
+    "requests>=2.32.4",
+]
