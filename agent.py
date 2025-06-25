@@ -1,11 +1,15 @@
 import os
+import json
 from dotenv import load_dotenv
+from llama_index.core.schema import Document
 from llama_index.core.agent.workflow import AgentWorkflow
 from llama_index.llms.groq import Groq
 from llama_index.tools.arxiv import ArxivToolSpec
 from llama_index.tools.wikipedia import WikipediaToolSpec
 from llama_index.tools.tavily_research import TavilyToolSpec
 from llama_index.tools.code_interpreter import CodeInterpreterToolSpec
+from llama_index.core.tools import FunctionTool
+from llama_index.retrievers.bm25 import BM25Retriever
 from PIL import Image
 import pytesseract
 
@@ -31,7 +35,7 @@ def extract_text_from_image(image_path: str) -> str:
         return f"Error extracting text from image: {str(e)}"
 
 
-def create_agent(llm_model: str = "qwen-qwq-32b"):
+def create_tools_agent(llm_model: str = "qwen-qwq-32b"):
     SYSTEM_PROMPT_TEMPLATE = """
     You are a helpful assistant tasked with answering questions using a set of tools. 
     Now, I will ask you a question. Report your thoughts, and finish your answer with the following template: 
@@ -56,6 +60,58 @@ def create_agent(llm_model: str = "qwen-qwq-32b"):
         ],
         system_prompt=SYSTEM_PROMPT_TEMPLATE,
     )
+    return agent
+
+
+with open("./metadata.jsonl", "r") as f:
+    json_list = list(f)
+
+json_QA = []
+for json_str in json_list:
+    json_data = json.loads(json_str)
+    json_QA.append(json_data)
+
+
+docs = [
+    Document(
+        text=f"Final Answer: {sample['Final answer']}",
+        metadata={
+            "task_id": sample["task_id"],
+            "question": sample["Question"],
+        },
+    )
+    for sample in json_QA
+]
+
+
+bm25_retriever = BM25Retriever.from_defaults(nodes=docs)
+
+
+def get_answer_info_retriever(query: str) -> str:
+    """Retrieves information from the GAIA benchmark dataset questions and answers."""
+    results = bm25_retriever.retrieve(query)
+    if results:
+        return "\n\n".join([doc.text for doc in results[:3]])
+    else:
+        return "No matching guest information found."
+
+
+# Initialize the tool
+answer_info_tool = FunctionTool.from_defaults(get_answer_info_retriever)
+
+
+def create_agent(llm_model: str = "qwen-qwq-32b"):
+    llm = Groq(
+        model=llm_model,
+        max_tokens=4096,
+    )
+
+    agent = AgentWorkflow.from_tools_or_functions(
+        [answer_info_tool],
+        llm=llm,
+        system_prompt="Answer the question very precisely, with just a few words or a number. The output should be in the format FINAL ANSWER: <answer>",
+    )
+
     return agent
 
 

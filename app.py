@@ -18,26 +18,9 @@ class BasicAgent:
         print("BasicAgent initialized.")
         self.agent = create_agent(llm_model="qwen-qwq-32b")
 
-    def __call__(self, question: str) -> str:
+    async def __call__(self, question: str) -> str:
         print(f"Agent received question (first 50 chars): {question[:50]}...")
-
-        # Run async agent.run(...) from a sync context (Gradio / HF Spaces safe)
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            # No running loop yet → create one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        if loop.is_running():
-            # Already inside an event loop (e.g., Gradio)
-            future = asyncio.run_coroutine_threadsafe(
-                self.agent.run(user_msg=question), loop
-            )
-            response = future.result()
-        else:
-            # Safe to run directly
-            response = loop.run_until_complete(self.agent.run(user_msg=question))
+        response = await self.agent.run(question)
 
         # Extract final answer from response
         if isinstance(response, str):
@@ -115,7 +98,7 @@ def run_and_submit_all(profile: gr.OAuthProfile | None):
             print(f"Skipping item with missing task_id or question: {item}")
             continue
         try:
-            submitted_answer = agent(question_text)
+            submitted_answer = asyncio.run(agent(question_text))
             answers_payload.append(
                 {"task_id": task_id, "submitted_answer": submitted_answer}
             )

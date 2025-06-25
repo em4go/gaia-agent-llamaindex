@@ -9,6 +9,7 @@ llama-index-tools-arxiv
 llama-index-tools-code-interpreter
 llama-index-tools-tavily-research
 llama-index-tools-wikipedia
+llama-index-retrievers-bm25
 pillow
 pytesseract
 python-dotenv
