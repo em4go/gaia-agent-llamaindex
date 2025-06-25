@@ -245,7 +245,7 @@ mypy-extensions==1.1.0
     # via typing-inspect
 nest-asyncio==1.6.0
     # via llama-index-core
-networkx==3.5
+networkx
     # via
     #   llama-index-core
     #   torch
