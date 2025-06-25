@@ -6,9 +6,19 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "gradio>=5.34.2",
+    "llama-hub>=0.0.79.post1",
+    "llama-index>=0.12.43",
     "llama-index-core>=0.12.43",
     "llama-index-embeddings-huggingface>=0.5.4",
+    "llama-index-llms-groq>=0.3.2",
     "llama-index-llms-huggingface-api>=0.5.0",
+    "llama-index-tools-arxiv>=0.3.0",
+    "llama-index-tools-code-interpreter>=0.3.0",
+    "llama-index-tools-tavily-research>=0.3.0",
+    "llama-index-tools-wikipedia>=0.3.0",
+    "pillow>=11.2.1",
+    "pytesseract>=0.3.13",
     "python-dotenv>=1.1.1",
     "requests>=2.32.4",
+    "tavily-python>=0.7.8",
 ]
