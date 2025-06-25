@@ -33,24 +33,11 @@ def extract_text_from_image(image_path: str) -> str:
 
 def create_agent(llm_model: str = "qwen-qwq-32b"):
     SYSTEM_PROMPT_TEMPLATE = """
-    You are **GaiaAgent**, an autonomous assistant evaluated by the GAIA benchmark.
-
-    TOOLS YOU CAN CALL
-    ------------------
-    - Tavily Research for web search
-    - Arxiv for academic paper search
-    - Wikipedia for general knowledge
-    - Code Interpreter for executing code and performing calculations
-    - Image Text Extraction for extracting text from images
-
-    RULES
-    -----
-    • Each task expects ONE exact answer.
-    • Finish with the line: FINAL ANSWER: <answer>
-    ─ Use as few words or characters as possible.
-    ─ When the answer is numeric do NOT use thousands separators or units
-        (%, $, etc.) unless the question explicitly asks for them.
-    ─ Lists must be comma-separated with NO extra spaces.
+    You are a helpful assistant tasked with answering questions using a set of tools. 
+    Now, I will ask you a question. Report your thoughts, and finish your answer with the following template: 
+    FINAL ANSWER: [YOUR FINAL ANSWER]. 
+    YOUR FINAL ANSWER should be a number OR as few words as possible OR a comma separated list of numbers and/or strings. If you are asked for a number, don't use comma to write your number neither use units such as $ or percent sign unless specified otherwise. If you are asked for a string, don't use articles, neither abbreviations (e.g. for cities), and write the digits in plain text unless specified otherwise. If you are asked for a comma separated list, Apply the rules above for each element (number or string), ensure there is exactly one space after each comma.
+    Your answer should only start with "FINAL ANSWER: ", then follows with the answer. 
     """.strip()
     llm = Groq(model=llm_model)
     arxiv_tools = ArxivToolSpec().to_tool_list()
@@ -73,17 +60,22 @@ def create_agent(llm_model: str = "qwen-qwq-32b"):
 
 
 async def main():
-    """
-    Main function to create the agent and run it with a sample question.
-    """
-    question = "When was a picture of St. Thomas Aquinas first added to the Wikipedia page on the Principle of double effect?"
-    agent = create_agent()
-    print("Agent created successfully.")
-    # Example usage:
-    handler = agent.run(question)
-    response = await handler
-    response = response.response
-    print(f"Agent response:\n{response}")
+    agent = create_agent(llm_model="qwen-qwq-32b")
+    question = "What year was Rafa Nadal born?"
+    response = await agent.run(user_msg=question)
+
+    # Parse and print final answer
+    if isinstance(response, str):
+        raw = response
+    else:
+        raw = str(response)
+
+    if "FINAL ANSWER:" in raw:
+        answer = raw.split("FINAL ANSWER:")[-1].strip()
+    else:
+        answer = raw.strip()
+
+    print(f"\nFinal Answer: {answer}")
 
 
 if __name__ == "__main__":

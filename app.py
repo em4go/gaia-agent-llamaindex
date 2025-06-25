@@ -3,6 +3,8 @@ import gradio as gr
 import requests
 import inspect
 import pandas as pd
+from agent import create_agent
+import asyncio
 
 # (Keep Constants as is)
 # --- Constants ---
@@ -14,12 +16,42 @@ DEFAULT_API_URL = "https://agents-course-unit4-scoring.hf.space"
 class BasicAgent:
     def __init__(self):
         print("BasicAgent initialized.")
+        self.agent = create_agent(llm_model="qwen-qwq-32b")
 
     def __call__(self, question: str) -> str:
         print(f"Agent received question (first 50 chars): {question[:50]}...")
-        fixed_answer = "This is a default answer."
-        print(f"Agent returning fixed answer: {fixed_answer}")
-        return fixed_answer
+
+        # Run async agent.run(...) from a sync context (Gradio / HF Spaces safe)
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # No running loop yet → create one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            # Already inside an event loop (e.g., Gradio)
+            future = asyncio.run_coroutine_threadsafe(
+                self.agent.run(user_msg=question), loop
+            )
+            response = future.result()
+        else:
+            # Safe to run directly
+            response = loop.run_until_complete(self.agent.run(user_msg=question))
+
+        # Extract final answer from response
+        if isinstance(response, str):
+            raw = response
+        else:
+            raw = str(response)
+
+        if "FINAL ANSWER:" in raw:
+            answer = raw.split("FINAL ANSWER:")[-1].strip()
+        else:
+            answer = raw.strip()
+
+        print(f"Agent returning answer: {answer}")
+        return answer
 
 
 def run_and_submit_all(profile: gr.OAuthProfile | None):
